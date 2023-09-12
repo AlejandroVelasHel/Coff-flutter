@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:coff_v_art/components/input.dart';
 import 'package:coff_v_art/models/categoria.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -53,30 +52,29 @@ class Categorias extends StatefulWidget {
   const Categorias({super.key});
 
   @override
-  State<Categorias> createState() {
-    return _CategoriasState();
+  State<Categorias> createState()=>
+    _CategoriasState();
   }
-}
 
 class _CategoriasState extends State<Categorias> {
+  bool _isLoading = true;
   final TextEditingController _nombre = TextEditingController();
   final TextEditingController _descripcion = TextEditingController();
-
 
   Future<AlbumC>? _futureAlbum;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Crear Empaquetado'),
-        ),
-        body: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(8),
-          child: (_futureAlbum == null) ? buildColumn() : buildFutureBuilder(),
-        ),
-      );
+      appBar: AppBar(
+        title: const Text('Crear Empaquetado'),
+      ),
+      body: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        child: (_futureAlbum == null) ? buildColumn() : buildFutureBuilder(),
+      ),
+    );
   }
 
   Column buildColumn() {
@@ -92,7 +90,7 @@ class _CategoriasState extends State<Categorias> {
           keyboardType: TextInputType.text,
         ),
         const SizedBox(height: 10),
-         InputComponent(
+        InputComponent(
           label: "Descripción: ",
           controller: _descripcion,
           obscureText: false,
@@ -104,8 +102,7 @@ class _CategoriasState extends State<Categorias> {
         ElevatedButton(
           onPressed: () {
             setState(() {
-              _futureAlbum = createAlbum(_nombre.text,
-               _descripcion.text);
+              _futureAlbum = createAlbum(_nombre.text, _descripcion.text);
             });
           },
           child: const Text('Crear Empaquetado'),
@@ -123,12 +120,14 @@ class _CategoriasState extends State<Categorias> {
         } else if (snapshot.hasError) {
           return Text('${snapshot.error}');
         }
-
         return const CircularProgressIndicator();
       },
     );
   }
 }
+
+// Resto del código sin cambios
+
 
 // ... (código anterior)
 
@@ -155,20 +154,24 @@ class _CategoriaListState extends State<CategoriaList> {
     _getData();
   }
 
-  _getData() async {
-    try {
-      String url = 'https://coff-v-art-api.onrender.com/api/categoria';
-      http.Response res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200) {
-        setState(() {
-          _isLoading = false;
-          categorias = DataModel2.fromJson(json.decode(res.body)).categorias;
-        });
-      }
-    } catch (e) {
-      debugPrint(e.toString());
+  Future<List<Categoria>> _getData() async {
+  try {
+    String url = 'https://coff-v-art-api.onrender.com/api/categoria';
+    http.Response res = await http.get(Uri.parse(url));
+    if (res.statusCode == 200) {
+      final categoriasData = DataModel2.fromJson(json.decode(res.body)).categorias;
+      setState(() {
+        _isLoading = false;
+        categorias = categoriasData;
+      });
+      return categoriasData;
     }
+  } catch (e) {
+    debugPrint(e.toString());
   }
+  return []; // Retorna una lista vacía en caso de error
+}
+
 
   _crearCategoria() async {
     try {
@@ -242,152 +245,173 @@ class _CategoriaListState extends State<CategoriaList> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Center(child: Text('Lista Empaquetado'))),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Nombre')),
-                  DataColumn(label: Text('Descripción')),
-                  DataColumn(label: Text('Acciones')),
-                ],
-                rows: [
-                  for (var categoria in categorias)
-                    DataRow(
-                      cells: [
-                        DataCell(Text(categoria.nombre)),
-                        DataCell(Text(categoria.descripcion)),
-                        DataCell(
-                          Row(
-                            children: [
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Editar categoría
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      _nombreController.text = categoria.nombre;
-                                      _descripcionController.text = categoria.descripcion;
-                                      return AlertDialog(
-                                        title: Text('Editar Empaquetado'),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextFormField(
-                                              controller: _nombreController,
-                                              decoration: InputDecoration(labelText: 'Nombre'),
+  return Scaffold(
+    appBar: AppBar(
+      title: const Center(child: Text('Lista Empaquetado')),
+    ),
+    body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : FutureBuilder<List<Categoria>>(
+            future: _getData(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Nombre')),
+                      DataColumn(label: Text('Descripción')),
+                      DataColumn(label: Text('Acciones')),
+                    ],
+                    rows: [
+                      for (var categoria in categorias)
+                        DataRow(
+                          cells: [
+                            DataCell(Text(categoria.nombre)),
+                            DataCell(Text(categoria.descripcion)),
+                            DataCell(
+                              Row(
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      // Editar categoría
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          _nombreController.text =
+                                              categoria.nombre;
+                                          _descripcionController.text =
+                                              categoria.descripcion;
+                                          return AlertDialog(
+                                            title: Text('Editar Empaquetado'),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextFormField(
+                                                  controller:
+                                                      _nombreController,
+                                                  decoration: InputDecoration(
+                                                      labelText: 'Nombre'),
+                                                ),
+                                                TextFormField(
+                                                  controller:
+                                                      _descripcionController,
+                                                  decoration: InputDecoration(
+                                                      labelText:
+                                                          'Descripción'),
+                                                ),
+                                              ],
                                             ),
-                                            TextFormField(
-                                              controller: _descripcionController,
-                                              decoration: InputDecoration(labelText: 'Descripción'),
-                                            ),
-                                          ],
-                                        ),
-                                        actions: [
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text('Cancelar'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              _editarCategoria(categoria);
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text('Guardar'),
-                                          ),
-                                        ],
+                                            actions: [
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Cancelar'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  _editarCategoria(categoria);
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('Guardar'),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                                child: const Text('Editar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Eliminar categoría
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text('Eliminar Empaquetado'),
-                                        content: Text('¿Estás seguro de que deseas eliminar este empaquetado?'),
-                                        actions: [
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: const Text('Cancelar'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              _eliminarCategoria(categoria);
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: const Text('Eliminar'),
-                                          ),
-                                        ],
+                                    child: const Text('Editar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      // Eliminar categoría
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title:
+                                                const Text('Eliminar Empaquetado'),
+                                            content: Text(
+                                                '¿Estás seguro de que deseas eliminar este empaquetado?'),
+                                            actions: [
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: const Text('Cancelar'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  _eliminarCategoria(categoria);
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: const Text('Eliminar'),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                                child: const Text('Eliminar'),
+                                    child: const Text('Eliminar'),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                    ],
+                  ),
+                );
+              }
+              // Fin del FutureBuilder
+              return Center(child: CircularProgressIndicator());
+            },
+          ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            _nombreController.clear();
+            _descripcionController.clear();
+            return AlertDialog(
+              title: const Text('Crear Empaquetado'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _nombreController,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  TextFormField(
+                    controller: _descripcionController,
+                    decoration:
+                        const InputDecoration(labelText: 'Descripción'),
+                  ),
                 ],
               ),
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              _nombreController.clear();
-              _descripcionController.clear();
-              return AlertDialog(
-                title: const Text('Crear Empaquetado'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: _nombreController,
-                      decoration: const InputDecoration(labelText: 'Nombre'),
-                    ),
-                    TextFormField(
-                      controller: _descripcionController,
-                      decoration: const InputDecoration(labelText: 'Descripción'),
-                    ),
-                  ],
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
                 ),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Cancelar'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _crearCategoria();
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Crear'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+                ElevatedButton(
+                  onPressed: () {
+                    _crearCategoria();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Crear'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      child: const Icon(Icons.add),
+    ),
+  );
+}
 }
