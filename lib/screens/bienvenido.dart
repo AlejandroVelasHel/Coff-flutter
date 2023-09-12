@@ -1,4 +1,4 @@
-import 'package:coff_v_art/screens/index.dart';
+import 'package:coff_v_art/screens/lista.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeView extends StatefulWidget {
@@ -19,7 +19,7 @@ class _WelcomeViewState extends State<WelcomeView>
       if (mounted) {
         // Comprobar si el widget está montado antes de redirigir
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HelloWorldView()),
+          MaterialPageRoute(builder: (context) => const MyList()),
         );
       }
     });
