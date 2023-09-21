@@ -1,5 +1,6 @@
-import 'package:coff_v_art/screens/login.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/home_screen/login.dart';
+
 
 void main() {
   runApp(const MainApp());
@@ -10,9 +11,9 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: LoginViewComponent(),
+    return  const MaterialApp(
       debugShowCheckedModeBanner: false,
+      home: LoginViewComponent(),
     );
   }
 }
